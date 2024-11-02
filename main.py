@@ -1,5 +1,6 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime
 
 app = Flask(__name__)
 @app.route("/")
@@ -126,6 +127,14 @@ class User(db.Model):
     gender = db.Column(db.String(10), nullable=False)
     motivation = db.Column(db.Text, nullable=False)
     ready_to_stay = db.Column(db.Boolean, default=False)
+    news = db.relationship('News', backref='author', lazy=True)
+
+class News(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(150), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    date_posted = db.Column(db.DateTime, default=datetime.utcnow)
+    author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
 # Создать таблицы в базе данных (выполнить один раз)
 with app.app_context():
@@ -163,6 +172,25 @@ def register():
             return 'Ошибка при добавлении данных в базу'
 
     return render_template('volunteers.html')
+
+@app.route('/news', methods=['GET', 'POST'])
+def news():
+    if request.method == 'POST':
+        title = request.form['title']
+        content = request.form['content']
+        author_id = request.form['author_id']  # ID волонтера, выбранного из списка
+
+        # Создание и добавление новости
+        new_news = News(title=title, content=content, author_id=author_id)
+        db.session.add(new_news)
+        db.session.commit()
+        return redirect(url_for('news'))
+
+    # Получение всех новостей и волонтеров для формы
+    all_news = News.query.order_by(News.date_posted.desc()).all()
+    volunteers = User.query.all()
+    return render_template('news.html', news=all_news, volunteers=volunteers)
+
 
 if __name__ == '__main__':
     app.run(port=8080, host='127.0.0.1')
