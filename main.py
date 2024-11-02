@@ -2,6 +2,8 @@ from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 
+
+
 app = Flask(__name__)
 @app.route("/")
 @app.route("/base")
@@ -113,12 +115,14 @@ def index20():
 
 # Настройки базы данных SQLite (или можно использовать другую СУБД)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
+
 # Модель данных для пользователей
-class User(db.Model):
+class Volunteer(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     surname = db.Column(db.String(100), nullable=False)
     name = db.Column(db.String(100), nullable=False)
@@ -134,7 +138,7 @@ class News(db.Model):
     title = db.Column(db.String(150), nullable=False)
     content = db.Column(db.Text, nullable=False)
     date_posted = db.Column(db.DateTime, default=datetime.utcnow)
-    author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    author_id = db.Column(db.Integer, db.ForeignKey('volunteer.id'), nullable=False)
 
 # Создать таблицы в базе данных (выполнить один раз)
 with app.app_context():
@@ -153,7 +157,7 @@ def register():
         ready_to_stay = 'ready_to_stay' in request.form
 
         # Создание нового пользователя
-        new_user = User(
+        new_user = Volunteer(
             surname=surname,
             name=name,
             education=education,
@@ -188,8 +192,9 @@ def news():
 
     # Получение всех новостей и волонтеров для формы
     all_news = News.query.order_by(News.date_posted.desc()).all()
-    volunteers = User.query.all()
+    volunteers = Volunteer.query.all()
     return render_template('news.html', news=all_news, volunteers=volunteers)
+
 
 
 if __name__ == '__main__':
